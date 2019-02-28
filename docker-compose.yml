@@ -1,0 +1,52 @@
+version: '3'
+services:
+  php:
+    build:
+      context: ./docker/config/php/
+      dockerfile: Dockerfile
+    image: digitalocean.com/php
+    container_name: app
+    restart: unless-stopped
+    environment:
+      SERVICE_NAME: app
+      SERVICE_TAGS: dev
+    working_dir: /var/www
+    volumes:
+      - ./docker/data/var/www:/var/www
+      - ./docker/config/php/php.ini:/usr/local/etc/php/conf.d/local.ini
+    networks:
+      - laravelNetwork
+
+  nginx:
+    image: nginx:alpine
+    container_name: webserver
+    restart: unless-stopped
+    ports:
+      - "888:80"
+      - "444:443"
+    volumes:
+      - ./docker/data/var/www:/var/www
+      - ./docker/config/nginx/conf.d/:/etc/nginx/conf.d/
+    networks:
+      - laravelNetwork
+
+  db:
+    image: mysql:5.7.22
+    container_name: db
+    restart: unless-stopped
+    expose:
+      - "3306"
+    environment:
+      MYSQL_DATABASE: user
+      MYSQL_ROOT_PASSWORD: laravel
+      SERVICE_TAGS: dev
+      SERVICE_NAME: mysql
+    volumes:
+      - ./docker/data/var/lib/mysql:/var/lib/mysql/
+      - ./docker/config/mysql/my.cnf:/etc/mysql/my.cnf
+    networks:
+      - laravelNetwork
+
+networks:
+  laravelNetwork:
+    driver: bridge
